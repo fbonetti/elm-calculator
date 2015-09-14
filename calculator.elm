@@ -43,7 +43,11 @@ init =
 
 orange : Color
 orange =
-  rgb 255 153 0
+  rgb 245 146 62
+
+darkerOrange : Color
+darkerOrange =
+  rgb 219 107 11
 
 lightGray : Color
 lightGray =
@@ -53,20 +57,49 @@ darkerGray : Color
 darkerGray =
   rgb 220 220 220
 
-calcButton : Keys -> String -> Element
-calcButton key label =
+type alias ButtonStyle =
+  { height : Int
+  , width : Int
+  , backgroundColor : Color
+  , textColor : Color
+  , downBackgroundColor : Color
+  , downTextColor : Color
+  }
+
+lightButtonStyle : ButtonStyle
+lightButtonStyle =
+  { height = 50
+  , width = 50
+  , backgroundColor = lightGray
+  , textColor = black
+  , downBackgroundColor = darkerGray
+  , downTextColor = black
+  }
+
+orangeButtonStyle : ButtonStyle
+orangeButtonStyle =
+  { height = 50
+  , width = 50
+  , backgroundColor = orange
+  , textColor = white
+  , downBackgroundColor = darkerOrange
+  , downTextColor = black
+  }
+
+calcButton : Keys -> String -> ButtonStyle -> Element
+calcButton key label style =
   let
     text = Text.fromString label
       |> Text.typeface ["Helvetica Neue"]
       |> Text.height 20
+      |> Text.color style.textColor
+    border c = container style.width style.height middle c |> color black
+    content = container (style.width - 1) (style.height - 1) middle (centered text)
   in
     customButton (Signal.message keys.address key)
-      (container 50 50 middle (container 49 49 middle (centered text) |> color lightGray)
-        |> color black)
-      (container 50 50 middle (container 49 49 middle (centered text) |> color lightGray)
-        |> color black)
-      (container 50 50 middle (container 49 49 middle (centered text) |> color darkerGray)
-        |> color black)
+      (border (content |> color style.backgroundColor))
+      (border (content |> color style.backgroundColor))
+      (border (content |> color style.downBackgroundColor))
 
 screen : Float -> Element
 screen value =
@@ -81,35 +114,34 @@ calculator model =
     [ screen model.current
     , flow right
         [ if model.current == 0
-            then calcButton AllClear   "AC"
-            else calcButton ClearEntry "C"
-        , calcButton  Negate  "+/-"
-        , calcButton  Percent "%"
-        , calcButton  Divide  "/"
+            then calcButton AllClear   "AC" lightButtonStyle
+            else calcButton ClearEntry "C" lightButtonStyle
+        , calcButton  Negate  "+/-" lightButtonStyle
+        , calcButton  Percent "%" lightButtonStyle
+        , calcButton  Divide  "÷" orangeButtonStyle
         ]
     , flow right
-        [ calcButton (Number 7) "7"
-        , calcButton (Number 8) "8"
-        , calcButton (Number 9) "9"
-        , calcButton  Multiply  "X"
+        [ calcButton (Number 7) "7" lightButtonStyle
+        , calcButton (Number 8) "8" lightButtonStyle
+        , calcButton (Number 9) "9" lightButtonStyle
+        , calcButton  Multiply  "×" orangeButtonStyle
         ]
     , flow right
-        [ calcButton (Number 4) "4"
-        , calcButton (Number 5) "5"
-        , calcButton (Number 6) "6"
-        , calcButton  Subtract  "-"
+        [ calcButton (Number 4) "4" lightButtonStyle
+        , calcButton (Number 5) "5" lightButtonStyle
+        , calcButton (Number 6) "6" lightButtonStyle
+        , calcButton  Subtract  "−" orangeButtonStyle
         ]
     , flow right
-        [ calcButton (Number 1) "1"
-        , calcButton (Number 2) "2"
-        , calcButton (Number 3) "3"
-        , calcButton  Add       "+"
+        [ calcButton (Number 1) "1" lightButtonStyle
+        , calcButton (Number 2) "2" lightButtonStyle
+        , calcButton (Number 3) "3" lightButtonStyle
+        , calcButton  Add       "+" orangeButtonStyle
         ]
     , flow right
-        [ calcButton (Number 0) "0"
-            |> width 100
-        , calcButton  Decimal   "."
-        , calcButton  Equal     "="
+        [ calcButton (Number 0) "0" { lightButtonStyle | width <- 100 }
+        , calcButton  Decimal   "." lightButtonStyle
+        , calcButton  Equal     "=" orangeButtonStyle
         ]
     --, show model
     --    |> width 200
@@ -121,7 +153,7 @@ update : Keys -> Model -> Model
 update key model =
   case key of
     Number num ->
-      { model | current <- num }
+      { model | current <- (model.current * 10 + num) }
     Add ->
       { model | memory <- model.current, function <- Just (+) }
     Subtract ->
